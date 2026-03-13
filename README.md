@@ -2,65 +2,105 @@
 
 ## 项目简介
 
-本系统是一个基于 Agentic AI 的自动化求职助手，用于自动收集 AI Engineer 校园招聘岗位信息。
+本系统是一个基于 **Agentic AI** 架构的自动化求职助手，采用 **LangGraph** 多智能体框架实现。系统根据用户输入的任意岗位类型，自动完成意图解析、搜索关键词生成、岗位搜索、URL 有效性验证、网页内容抓取、语义评估等全流程，最终输出结构化的校园招聘/实习岗位数据。
+
+---
 
 ## 技术栈
 
-- **LangGraph**: 多智能体编排框架，基于图状态机实现
-- **Crawl4AI**: AI 驱动的网页抓取工具，支持反爬虫绕过
-- **LangChain**: LLM 应用开发框架
-- **OpenAI**: GPT-4o 模型提供语义理解能力
-- **Tavily**: 搜索引擎 
+| 类别 | 技术 | 用途 |
+|------|------|------|
+| 多智能体框架 | **LangGraph** | 基于图状态机的多节点编排 |
+| LLM 应用框架 | **LangChain** | Prompt 模板、输出解析、结构化调用 |
+| 大语言模型 | **OpenAI GPT-4o** | 语义理解、内容解析、URL 验证 |
+| 网页搜索 | **Tavily** | 实时搜索招聘网站 |
+| 网页抓取 | **Crawl4AI** | AI 驱动的网页内容提取 |
+| 前端界面 | **Gradio** | 交互式聊天界面 |
+| 环境配置 | **python-dotenv** | 环境变量管理 |
+
+---
 
 ## 项目结构
 
 ```
-homework/
-├── src/
+.
+├── prompts/                              # 📝 LLM 提示词（运行时动态加载）
+│   ├── evaluator_system.md                # 语义评估器 System Prompt
+│   ├── evaluator_user.md                  # 语义评估器 User 模板
+│   ├── query_planner_system.md            # 查询规划器 System Prompt
+│   ├── intent_parser_system.md            # 意图解析器 System Prompt
+│   └── url_validator_system.md            # URL 验证器 System Prompt
+│
+├── src/                                   # 📦 核心源代码
 │   ├── __init__.py
-│   ├── config.py                    # 全局配置
-│   ├── agents/
+│   │
+│   ├── config.py                          # ⚙️ 全局配置（API Key、LLM 参数、工程参数）
+│   │
+│   ├── agents/                            # 🤖 Agent 核心模块
 │   │   ├── __init__.py
-│   │   ├── state.py                 # 状态定义 (GraphState & JobInfo)
-│   │   ├── prompts.py               # 提示词工程
-│   │   ├── nodes.py                 # 核心智能体节点
-│   │   └── graph.py                 # 图编排与路由
-│   ├── tools/
+│   │   ├── state.py                       # 📋 状态定义（AgentState、JobInfo）
+│   │   ├── graph.py                       # 🕸️ LangGraph 图编排与条件路由
+│   │   ├── runner.py                      # 🏃 工作流运行入口
+│   │   │
+│   │   └── nodes/                         # 📍 LangGraph 节点实现
+│   │       ├── __init__.py
+│   │       ├── intent_parser_node.py      # 🎯 意图解析：提取目标岗位、数量
+│   │       ├── query_planner_node.py      # 📝 查询规划：生成搜索关键词
+│   │       ├── job_searcher_node.py       # 🔍 岗位搜索：调用 Tavily
+│   │       ├── url_validator_node.py      # ✅ URL 验证：过滤无效链接
+│   │       ├── detail_scraper_node.py     # 🕷️ 详情抓取：使用 Crawl4AI
+│   │       └── semantic_evaluator_node.py# 🧠 语义评估：LLM 判断岗位有效性
+│   │
+│   ├── tools/                             # 🛠️ 工具模块
 │   │   ├── __init__.py
-│   │   ├── search_tool.py           # 搜索工具
-│   │   ├── scraper_tool.py          # 抓取工具
-│   │   └── parser_tool.py           # 解析工具
-│   └── utils/
+│   │   ├── search_tool.py                 # 搜索工具封装
+│   │   ├── scraper_tool.py                # 抓取工具封装
+│   │   └── parser_tool.py                 # 解析工具（调用 LLM）
+│   │
+│   └── utils/                             # 🧰 工具函数
 │       ├── __init__.py
-│       └── output_formatter.py      # 输出格式化
-├── main.py                          # 系统入口
-├── requirements.txt                  # 依赖清单
-├── .env.example                     # 环境变量示例
-└── homework/                        # Python 虚拟环境
+│       ├── prompt_loader.py               # 动态加载提示词
+│       └── output_formatter.py            # 输出格式化（CSV/JSON）
+│
+├── app_chat.py                            # 🎨 Gradio 聊天界面入口
+├── requirements.txt                       # 📌 Python 依赖
+└── .env                                   # 🔐 环境变量（需手动创建）
 ```
+
+### 节点详细说明
+
+| 序号 | 节点 | 输入 | 输出 | 核心功能 |
+|------|------|------|------|----------|
+| 1 | `intent_parser_node` | 用户原始输入 | `target_role`, `target_count`, `keywords` | 解析用户意图，提取目标岗位类型、数量 |
+| 2 | `query_planner_node` | 意图解析结果 | `search_queries` | 生成多样化搜索关键词 |
+| 3 | `job_searcher_node` | 搜索关键词 | `search_results` (URL列表) | 调用 Tavily 搜索招聘网站 |
+| 4 | `url_validator_node` | URL 列表 | `validated_urls` | LLM 判断是否为有效职位详情页 |
+| 5 | `detail_scraper_node` | 有效 URL | `scraped_contents` | 使用 Crawl4AI 抓取页面内容 |
+| 6 | `semantic_evaluator_node` | 页面内容 | `collected_jobs` | LLM 判断岗位是否符合要求，提取信息 |
+| 7 | `check_completion` | 已收集岗位数 | 路由决策 | 检查是否达到目标或超出轮数 |
+
+---
 
 ## 快速开始
 
-### 1. 激活虚拟环境
+### 1. 环境要求
+
+- Python 3.12+
+- macOS / Linux / Windows
+
+### 2. 创建虚拟环境
 
 ```bash
-cd homework
-source homework/bin/activate  # Linux/Mac
-# 或
-homework\Scripts\activate     # Windows
+python3.12 -m venv homework
+source homework/bin/activate  # macOS / Linux
+# homework\Scripts\activate  # Windows
 ```
 
-### 2. 安装依赖
+### 3. 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
-
-### 3. 配置环境变量
-
-打开 `.env`，并填入您的 API Key：
-
-获取 OpenAI API Key: https://platform.openai.com/api-keys
 
 ### 4. 初始化 Crawl4AI
 
@@ -68,75 +108,45 @@ pip install -r requirements.txt
 crawl4ai-setup
 ```
 
-### 5. 运行系统
+### 5. 配置环境变量
+
+创建 `.env` 文件：
 
 ```bash
-python main.py
+# OpenAI API Key（必须）
+# 获取地址: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-xxxxxxxxxxxx
+
+# Tavily API Key（搜索必须）
+# 获取地址: https://app.tavily.com/api-keys
+TAVILY_API_KEY=tvly-xxxxxxxxxxxx
+
+# 代理配置（可选，如需翻墙）
+HTTP_PROXY=http://127.0.0.1:7890
+HTTPS_PROXY=http://127.0.0.1:7890
 ```
 
-## 输出文件
+### 6. 运行系统
 
-系统运行完成后会生成以下文件：
+```bash
+python app_chat.py
+```
 
-- `standardized_ai_jobs.csv`: 标准化 CSV 格式岗位数据
-- `standardized_ai_jobs.json`: JSON 格式岗位数据（保留 tech_tags 数组）
+浏览器访问 **http://127.0.0.1:7860** ，在输入框输入求职需求：
 
-## Agent 能力与三大工具
+```
+我想找交通运输岗位50条
+帮我搜20条机械工程师实习
+找数据科学岗位10条
+```
 
-符合作业要求「搜索工具、抓取工具、解析工具」及完整流程：
+---
 
-| 能力 | 说明 | 实现位置 |
-|------|------|----------|
-| **任务规划** | 将「找到 50 个岗位」拆解为 搜索 → 抓取 → 解析 → 去重 → 存储 | `graph.py` 编排；`nodes.py` 各节点 |
-| **工具调用** | 能调用搜索工具、网页抓取工具、信息解析工具 | 见下方三大工具 |
-| **迭代搜索** | 岗位数量不足时自动调整关键词继续搜索 | `query_planner_node` + `check_completion_router` |
-| **语义判断** | 判断岗位是否属于 AI Engineer 方向（校招/实习） | `parser_tool` + 解析工具内 LLM |
-| **数据清洗** | 自动结构化岗位信息（JobInfo） | `parser_tool`、`output_formatter` |
-| **结果汇总** | 输出标准化 JSON/CSV | `output_formatter.format_and_save_jobs` |
+## 输出结果
 
-### 三大工具
+系统运行完成后，在当前目录生成：
 
-1. **搜索工具** `src/tools/search_tool.py`  
-   执行网络搜索，获取招聘相关 URL（DuckDuckGo）。Agent 在 `job_searcher_node` 中调用。
-
-2. **抓取工具** `src/tools/scraper_tool.py`  
-   网页抓取，获取页面 Markdown（Crawl4AI）。Agent 在 `detail_scraper_node` 中调用。
-
-3. **解析工具** `src/tools/parser_tool.py`  
-   将抓取内容解析为结构化岗位信息并做语义判断（LLM + JobInfo）。Agent 在 `semantic_evaluator_node` 中调用。
-
-### 示例工作流程
-
-1. 选择/构造搜索关键词（如 AI Engineer、机器学习工程师、算法工程师）
-2. **搜索** → 抓取职位列表/详情页 URL
-3. **抓取** → 进入详情页获取页面内容
-4. **解析** → 判断是否符合「AI Engineer + 校招/实习」，结构化输出
-5. 去重（按 `job_url`）
-6. 不足 50 条 → 调整关键词回到步骤 2
-7. 输出标准化 JSON/CSV
-
-## 核心功能
-
-1. **任务规划**: 根据已收集数量动态生成搜索策略
-2. **多源搜索**: 支持多个招聘网站搜索（搜索工具）
-3. **智能爬虫**: 绕过反爬机制抓取页面（抓取工具）
-4. **语义筛选**: 解析工具内 LLM 区分真正的 AI Engineer 与普通后端
-5. **自动迭代**: 不足 50 条时自动继续搜索
-6. **防死循环**: 最大迭代次数保护
-7. **去重**: 结果按 URL 去重后再写入文件
-
-## 配置参数
-
-在 `src/config.py` 中可修改：
-
-- `TARGET_JOB_COUNT`: 目标岗位数量
-- `MAX_LOOP_COUNT`: 最大迭代次数
-- `MAX_SEARCH_RESULTS`: 每次搜索结果数
-- `MAX_SCRAPE_PER_ITERATION`: 每次抓取页面数
-
-## 注意事项
-
-1. 请确保已设置有效的 OpenAI API Key
-2. 系统会自动处理部分失败，继续执行
-3. 首次运行可能需要较长时间初始化
-4. 如遇反爬限制，建议等待后重试
+| 文件 | 格式 | 说明 |
+|------|------|------|
+| `Jobs.csv` | CSV (utf-8-sig) | 便于 Excel 打开 |
+| `Jobs.json` | JSON | 便于程序处理 |

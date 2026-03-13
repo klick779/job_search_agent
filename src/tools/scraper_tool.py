@@ -49,11 +49,22 @@ async def execute_stealth_scraping(urls: List[str]) -> List[Dict]:
                 # 节奏控制：模拟人类阅读延迟，避免因请求频率过高触发防火墙
                 await asyncio.sleep(2)
                 result = await crawler.arun(url=url, config=run_config)
-                if result.success and result.markdown:
+                
+                # 检查 HTTP 状态码，过滤无效页面
+                http_status = result.status_code if hasattr(result, 'status_code') else None
+                is_url_valid = http_status is None or (http_status >= 200 and http_status < 400)
+                
+                if result.success and result.markdown and is_url_valid:
                     scraped_data.append({
                         "url": url,
-                        "markdown": result.markdown  # 获取经过清洗的、对LLM友好的纯净 Markdown
+                        "markdown": result.markdown,
+                        "http_status": http_status,
+                        "is_valid": True
                     })
+                else:
+                    # 记录无效 URL（404/403/410 等）
+                    status_info = http_status if http_status else "抓取失败"
+                    print(f"  [过滤] {url} -> 状态码: {status_info}")
             except Exception as e:
                 print(f"  抓取失败 {url}: {e}，放弃该目标。")
     

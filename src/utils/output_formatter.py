@@ -30,20 +30,26 @@ def deduplicate_jobs(jobs: List[Dict]) -> List[Dict]:
     return out
 
 
-def format_and_save_jobs(jobs: List[Dict], output_dir: str = ".") -> None:
+def format_and_save_jobs(jobs: List[Dict], output_dir: str = ".") -> tuple:
     """
     将岗位数据格式化为标准格式并保存到本地文件。
+
     参数：
         jobs: 包含岗位信息的字典列表
         output_dir: 输出文件目录，默认为当前目录
+
     效果：
         1. 将列表形式的 tech_tags 转换为逗号分隔的字符串
         2. 移除内部评估字段 is_valid_ai_role
         3. 生成 CSV 和 JSON 两种格式的文件
+
+    返回：
+        (csv_path, json_path) 的元组，便于调用方在聊天等场景中展示路径；
+        若无数据则返回 (None, None)。
     """
     if not jobs:
         print("没有需要保存的岗位数据。")
-        return
+        return (None, None)
     
     # 格式化 job_url 
     cleaned_jobs = []
@@ -88,6 +94,6 @@ def format_and_save_jobs(jobs: List[Dict], output_dir: str = ".") -> None:
     
     with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(final_jobs, json_file, ensure_ascii=False, indent=4)
-    
-    print(f">>> 已生成：{csv_path} 及 {json_path}")
 
+    print(f">>> 已生成：{csv_path} 及 {json_path}")
+    return (csv_path, json_path)
