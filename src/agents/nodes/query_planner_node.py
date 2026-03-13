@@ -74,9 +74,12 @@ def query_planner_node(state: AgentState) -> Dict:
     new_queries = [q.strip().strip('"').strip("'") for q in response.content.split(",") if q.strip()]
     new_queries = new_queries[:3]
     
+    # 追加到历史查询列表
+    updated_used_queries = used_queries + new_queries
+    
     return {
         "current_search_queries": new_queries,
-        "used_queries": new_queries,
+        "used_queries": updated_used_queries,
         "loop_count": loop_count + 1,
         "allowed_sites": allowed_sites,
         "current_site_index": current_site_index,
