@@ -67,7 +67,7 @@ class AgentState(TypedDict):
     loop_count: int                         # 当前 Agent 已经循环思考了多少次（防止死循环）
     allowed_sites: List[str]                # 允许去哪些招聘网站搜，比如 ["boss.com", "lagou.com"]
     current_site_index: int                 # 当前正在搜索 allowed_sites 里的第几个网站
-    scraped_urls: List[str]                 # 当前这一轮成功抓取到内容的 URL 列表
+    scraped_urls: Annotated[List[str], operator.add]   # 当前这一轮成功抓取到内容的 URL 列表
     
     # 4. URL 验证相关（新增）
     validated_urls: NotRequired[List[str]]       # 经过初步校验，看起来像是有效招聘详情页的链接
