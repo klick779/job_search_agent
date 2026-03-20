@@ -15,7 +15,6 @@ DEFAULT_ALLOWED_SITES = [
     "nowcoder.com",
     "shixiseng.com",
     "zhipin.com",
-    "lagou.com",
     "liepin.com",
 ]
 
