@@ -20,7 +20,7 @@ def get_query_planner_system_prompt(remaining: int, used_queries_str: str, targe
         # 尝试动态加载外部 Markdown 文件，注入“还差几个岗位”、“用过哪些词”、“目标岗位”
         return load_prompt("query_planner_system", remaining=remaining, used_queries_str=used_queries_str, target_role=target_role)
     except Exception:
-        # 【面试高频考点区】：硬编码的 Fallback（降级方案）
+        # 硬编码的 Fallback（降级方案）
         # 这里把业务逻辑（生成 3 个、逗号分隔）死死绑在了代码里。
         return f"""目标是收集 {remaining} 个{target_role}相关岗位。生成与历史不同的新查询。
 历史搜索词: {used_queries_str}
@@ -67,7 +67,7 @@ def query_planner_node(state: AgentState) -> Dict:
             # 返回字典去更新 AgentState
             return {
                 "current_search_queries": new_queries, # 供这轮搜索使用
-                "used_queries": new_queries,           # 【高危 Bug 区，后续详讲】记入历史账本
+                "used_queries": new_queries,           # 记入历史账本
                 "loop_count": loop_count + 1,          # 轮次 +1
                 "allowed_sites": allowed_sites,
                 "current_site_index": current_site_index,
@@ -84,7 +84,7 @@ def query_planner_node(state: AgentState) -> Dict:
         target_role=target_role
     )
     
-    # 调用大模型，让它输出逗号分隔的字符串（注意：这里大模型可能会因为幻觉输出废话）
+    # 调用大模型，让它输出逗号分隔的字符串
     response = llm.invoke([HumanMessage(content=prompt)])
     
     # 字符串清洗：按逗号切分，并去掉两端的引号和空格

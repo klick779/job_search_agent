@@ -44,7 +44,7 @@ class AgentState(TypedDict):
     # 3. 搜索与执行过程中的动态数据
     target_count: int                       # 我们目标要抓取多少个岗位（比如从 Config 里读取的 50）
     
-    # 【高能预警：Annotated 与 operator.add】
+    # 【Annotated 与 operator.add】
     # 正常的字典更新是“覆盖”。但在这里，我们希望每次找到新岗位时，是“追加”到列表中！
     # Annotated[List[Dict], operator.add] 的意思就是告诉 LangGraph：
     # “如果有新数据进来，请用加法（追加）和旧数据合并，千万别把旧数据覆盖掉！”
@@ -69,6 +69,6 @@ class AgentState(TypedDict):
     current_site_index: int                 # 当前正在搜索 allowed_sites 里的第几个网站
     scraped_urls: Annotated[List[str], operator.add]   # 当前这一轮成功抓取到内容的 URL 列表
     
-    # 4. URL 验证相关（新增）
+    #  URL 验证相关
     validated_urls: NotRequired[List[str]]       # 经过初步校验，看起来像是有效招聘详情页的链接
     url_validation_results: NotRequired[List[Dict]] # URL 校验的具体结果报告

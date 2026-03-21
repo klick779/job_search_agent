@@ -92,7 +92,7 @@ def _get_validator_prompt() -> str:
     try:
         return load_prompt("url_validator_system")
     except Exception:
-        # 【修复】：加上了 Fallback，防止 markdown 文件丢失导致程序直接崩溃
+        # 加上Fallback，防止 markdown 文件丢失导致程序直接崩溃
         return """你是一个专业的 URL 过滤器。根据提供的 URL、标题和摘要，判断该页面是否为【具体的职位详情页】。
 请剔除：公司首页、职位列表页、论坛讨论帖、新闻文章。
 严格按 JSON 格式输出结果。"""

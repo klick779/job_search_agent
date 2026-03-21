@@ -82,8 +82,7 @@ def run_pipeline(
         user_input=user_input,
         target_count=target_count,
     )
-
-    # 【面试加分点：系统级防爆破机制】
+    
     # LangGraph 默认有一个死循环保护机制：如果图谱循环超过 25 次就会直接抛出 GraphRecursionError 崩溃。
     # 我们在这里通过 config 显式接管了这个配置，确保 Agent 有足够的轮次去“肝”出 50 个岗位。
     run_config = {"recursion_limit": config.RECURSION_LIMIT}

@@ -46,7 +46,7 @@ def targeted_job_search(keyword: str, target_domain: str) -> Dict[str, Any]:
         tavily_tool = TavilySearchResults(
             api_key=api_key,
             max_results=config.MAX_SEARCH_RESULTS, # 从配置文件读取最大返回条数（比如一次搜20条）
-            include_domains=[target_domain],       # 【核心亮点】将搜索范围死死限制在指定的域名内（比如只搜牛客网）
+            include_domains=[target_domain],       # 将搜索范围死死限制在指定的域名内（比如只搜牛客网）
             include_raw_content=False              # 不抓取完整的原始 HTML，节省带宽和内存，把重活交给后面的专业爬虫 Crawl4AI
         )
         

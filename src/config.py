@@ -105,7 +105,7 @@ class Config:
     MAX_SEARCH_RESULTS: int = 20        # 每次使用搜索引擎最多返回的结果条数
     CONTENT_TRUNCATION_LENGTH: int = 4000 # 文本截断长度，如果网页内容太长，只保留前 4000 个字符，防止大模型被撑爆
     SCRAPER_DELAY: float = 2.0          # 爬虫抓取延迟（每次抓完休息 2 秒），防止被目标网站封杀 IP
-    RECURSION_LIMIT: int = 100          # 递归深度限制，同样是防止程序在复杂的任务中无限嵌套而崩溃
+    RECURSION_LIMIT: int = 50          # 递归深度限制，同样是防止程序在复杂的任务中无限嵌套而崩溃
 
 
 # 实例化为一个具体的对象 `config`，这样其他文件只需 `from config import config` 就能直接用这些参数了。

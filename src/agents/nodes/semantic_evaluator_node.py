@@ -29,7 +29,7 @@ def semantic_evaluator_node(state: AgentState) -> Dict:
     # 遍历爬虫刚抓回来的每一篇网页文本
     for item in scraped_items:
         
-        # 爬虫底层会标记一些死链（404），这里直接过滤，给大模型省 Token
+        # 爬虫底层会标记一些死链，这里直接过滤，给大模型省 Token
         if not item.get("is_valid", True):
             print(f"  [过滤无效] {item['url']} - 页面已失效")
             continue
