@@ -4,6 +4,7 @@ __pycache__/
 homework/
 
 .env
+.DS_Store
 
 *.png
 *.json
