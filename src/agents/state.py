@@ -13,18 +13,18 @@ import operator  # 导入基础操作符，主要为了用 operator.add
 
 class JobInfo(BaseModel):
     """单条招聘岗位信息的结构化模型"""
-    # 继承 BaseModel 后，下面的每一个属性都会被 Pydantic 严格审查类型。
-    # Field(description="...") 是写给大模型看的！大模型在提取网页信息时，会读取这些 description 来理解字段含义。
     title: str = Field(description="职位名称")
     company: str = Field(description="公司名称")
     location: str = Field(description="工作地点")
     salary: str = Field(description="薪资范围")
-    tech_tags: List[str] = Field(description="技术关键词") # 比如 ["Python", "LangChain", "LLM"]
+    tech_tags: List[str] = Field(description="技术关键词")
     requirements: str = Field(description="岗位核心技能摘要")
     source: str = Field(description="招聘网站")
     job_url: str = Field(description="岗位链接")
-    # 这是一个布尔值（True/False），用来让大模型判断这个岗位是不是我们要找的校招/实习
     is_valid_role: bool = Field(description="是否符合用户期望的岗位类型，且面向校招/实习生")
+    extraction_reasoning: str = Field(
+        description="判断理由：先说明相关性判定理由，再说明公司名提取依据，最后说明来源网站判断依据。如果无效，说明无效原因。"
+    )
 
 
 class AgentState(TypedDict):

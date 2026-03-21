@@ -1,0 +1,6 @@
+DEFAULT_ALLOWED_SITES = [
+    "zhipin.com",
+    "shixiseng.com",
+    "nowcoder.com",
+    "liepin.com",
+]

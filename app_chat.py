@@ -98,12 +98,10 @@ def chat_turn(message: str, history: list):
 
 def build_ui():
     """使用 Blocks 拼装前端页面"""
-    with gr.Blocks(title="AI 招聘 Agent", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="AI 招聘 Agent") as demo:
         gr.Markdown("# 🤖 智能求职搜索 Agent")
         gr.Markdown("输入您的求职意向（如：「帮我找AI 工程师岗位50条」），Agent 将自动为您全网搜罗并整理为表格。")
-        
-        # 【核心修复】：必须明确声明 type="messages"，否则旧版 Gradio 会无法解析你上面返回的字典格式，导致聊天框白屏！
-        chatbot = gr.Chatbot(label="Agent 工作流面板", height=500, type="messages")
+        chatbot = gr.Chatbot(label="Agent 工作流面板", height=500)
         
         with gr.Row():
             msg = gr.Textbox(
@@ -136,4 +134,4 @@ def build_ui():
 if __name__ == "__main__":
     demo = build_ui()
     # 启动本地服务器。关闭 share=False 防止企业内部代码意外泄露到公网
-    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
+    demo.launch(server_name="127.0.0.1", server_port=7860, share=False, theme=gr.themes.Soft())

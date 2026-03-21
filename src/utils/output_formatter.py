@@ -116,10 +116,10 @@ def format_and_save_jobs(jobs: List[Dict], output_dir: str = ".") -> tuple:
             lambda x: ", ".join(x) if isinstance(x, list) else x
         )
     
-    # 检查列名中是否包含 'is_valid_role'（这通常是 Agent 在后台自我审查时用的标记）
-    if 'is_valid_role' in df.columns:
-        # df.drop() 会删掉这一列。我们不希望把 Agent 的内部逻辑变量暴露给最终用户
-        df = df.drop(columns=['is_valid_role'])
+    # 检查列名中是否包含 'is_valid_role' 和 'extraction_reasoning'（这些是 Agent 内部推理字段）
+    for internal_field in ['is_valid_role', 'extraction_reasoning']:
+        if internal_field in df.columns:
+            df = df.drop(columns=[internal_field])
     
     # --- 第 3 步：定义输出文件的路径 ---
     # 使用 f-string (格式化字符串) 拼接目录和文件名
@@ -135,9 +135,10 @@ def format_and_save_jobs(jobs: List[Dict], output_dir: str = ".") -> tuple:
     final_jobs = []          # 准备一个新的列表存 JSON 数据（因为 JSON 可以保留原来的列表结构，不需要像 CSV 那样转字符串）
     for job in cleaned_jobs: # 遍历第一步清洗出的原始字典（这里的 tech_tags 依然还是列表）
         job_copy = job.copy() # 拷贝一份字典，防止修改原数据
-        # 同样需要脱敏，删掉内部的 is_valid_role 字段
-        if 'is_valid_role' in job_copy:
-            del job_copy['is_valid_role']
+        # 同样需要脱敏，删掉 Agent 内部推理字段
+        for internal_field in ['is_valid_role', 'extraction_reasoning']:
+            if internal_field in job_copy:
+                del job_copy[internal_field]
         final_jobs.append(job_copy) # 将处理好的字典加入最终列表
     
     # 使用上下文管理器 (with open) 打开一个 JSON 文件进行写入 ("w" 代表 write)

@@ -64,7 +64,6 @@ def check_url_accessibility(url: str, timeout: float = 5.0) -> tuple[bool, int |
             })
             status_code = response.status_code
             
-            # 【高危 Bug 已修复：反反爬误杀防线】
             # 很多招聘网站的安全策略很严，看到你发 HEAD 请求，会直接给你返回 403（禁止访问）或 405（方法不允许）。
             # 以前的代码写的是：只要不是 200~399 就判定死亡，这会误杀大量好链接！
             # 现在的逻辑（疑罪从无）：只坚决干掉 404（不存在）和 410（永久删除），其他的通通放行！
@@ -82,6 +81,72 @@ def check_url_accessibility(url: str, timeout: float = 5.0) -> tuple[bool, int |
     except Exception:
         # 兜底其他未知网络错误
         return False, None
+
+
+# ==========================================
+# 模块 2.5：第二重防线 - URL 格式硬校验（确定性，不依赖 LLM）
+# ==========================================
+def is_detail_page_by_url(url: str) -> tuple[bool, str]:
+    """
+    通过 URL 结构判断是否为职位详情页。
+    这是【确定性校验】，不依赖 LLM 理解，100% 可靠。
+
+    规则与 evaluator_system.md 保持一致：
+    - ✅ 放行：符合详情页格式的 URL
+    - ❌ 拦截：列表页、搜索页、公司页等
+
+    返回: (是否有效, 拦截原因)
+    """
+    url_lower = url.lower()
+
+    # ===== BOSS直聘 =====
+    if "zhipin.com" in url_lower:
+        # ✅ 详情页：必须是 /job_detail/ + .html
+        if "/job_detail/" in url_lower and url_lower.endswith(".html"):
+            return True, "BOSS详情页，含/job_detail/和.html"
+        # ❌ 列表页：/zhaopin/, /job_pk/, /gongzhao/
+        if "/zhaopin/" in url_lower:
+            return False, "BOSS列表页，含/zhaopin/"
+        if "/job_pk/" in url_lower:
+            return False, "BOSS列表页，含/job_pk/"
+        if "/gongzhao/" in url_lower:
+            return False, "BOSS列表页，含/gongzhao/"
+        # ❌ 其他非详情页格式
+        return False, f"BOSS直聘非详情页格式: {url_lower[:80]}"
+
+    # ===== 实习僧 =====
+    if "shixiseng.com" in url_lower:
+        # ✅ 详情页：/intern/ + ID
+        if "/intern/" in url_lower:
+            return True, "实习僧详情页，含/intern/"
+        return False, f"实习僧非详情页格式: {url_lower[:80]}"
+
+    # ===== 牛客网 =====
+    if "nowcoder.com" in url_lower:
+        # ✅ 详情页：/jobs/detail/ + 数字ID
+        if "/jobs/detail/" in url_lower:
+            return True, "牛客详情页，含/jobs/detail/"
+        # ❌ 其他格式
+        if "/feed/" in url_lower or "/discuss/" in url_lower or "/article/" in url_lower:
+            return False, "牛客非详情页（动态/讨论/文章）"
+        return False, f"牛客非详情页格式: {url_lower[:80]}"
+
+    # ===== 猎聘 =====
+    if "liepin.com" in url_lower:
+        # ✅ 详情页：/position_detail/
+        if "/position_detail/" in url_lower:
+            return True, "猎聘详情页，含/position_detail/"
+        return False, f"猎聘非详情页格式: {url_lower[:80]}"
+
+    # ===== 拉勾 =====
+    if "lagou.com" in url_lower or "liegou.com" in url_lower:
+        # ✅ 详情页：/job_detail/
+        if "/job_detail/" in url_lower:
+            return True, "拉勾详情页，含/job_detail/"
+        return False, f"拉勾非详情页格式: {url_lower[:80]}"
+
+    # ===== 未知平台 =====
+    return False, f"未知招聘平台: {url_lower[:80]}"
 
 
 # ==========================================
@@ -177,7 +242,7 @@ def url_validator_node(state: AgentState) -> Dict:
         
         # --- 漏斗第一关：物理探针 ---
         is_accessible, status_code = check_url_accessibility(url)
-        
+
         # 如果是 404 死链，直接打回，跳过后面昂贵的 LLM 验证
         if not is_accessible:
             print(f"  [URL预检] {url} -> 确认为死链 (状态码 {status_code})，丢弃。")
@@ -188,10 +253,24 @@ def url_validator_node(state: AgentState) -> Dict:
                 "corrected_company": "",
                 "corrected_url": ""
             })
-            continue 
-        
-        # --- 漏斗第二关：LLM 语义验证 ---
-        # 如果网页存活，交给大模型做阅读理解
+            continue
+
+        # --- 漏斗第二关：URL 格式硬校验（确定性，不依赖 LLM）---
+        # 【核心修复】：即使 LLM 误判，只要 URL 结构不符合详情页格式，一律拦截！
+        is_detail_format, format_reason = is_detail_page_by_url(url)
+        if not is_detail_format:
+            print(f"  [URL格式拦截] {url} -> {format_reason}")
+            validated_results.append({
+                "url": url,
+                "is_valid": False,
+                "reason": format_reason,
+                "corrected_company": "",
+                "corrected_url": ""
+            })
+            continue
+
+        # --- 漏斗第三关：LLM 语义验证（补充，用于提取公司名等）---
+        # 如果网页存活且 URL 格式正确，交给大模型做阅读理解
         result = validate_url_with_llm(url, title, snippet)
         
         # 记录判决书
@@ -204,12 +283,9 @@ def url_validator_node(state: AgentState) -> Dict:
         })
         
         # --- 根据判决结果进行收录 ---
+        # 【Bug修复】：去掉 corrected_url 绕过逻辑，只信任 LLM 的直接判定
         if result.is_valid_job_detail_page:
-            # 大模型说这是好链接，直接加入白名单
             valid_urls.append(url)
-        elif result.corrected_url:
-            # 大模型说原链接不好，但它修好了一个新链接，把新链接加入白名单
-            valid_urls.append(result.corrected_url)
     
     # 打印本轮漏斗的过滤成绩单
     print(f"  [URL验证] 搜索发现 {len(current_new_urls)} 个URL，通过双重验证存活: {len(valid_urls)} 个")
