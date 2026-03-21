@@ -11,9 +11,9 @@ from src.agents.state import AgentState
 from src.tools.search_tool import targeted_job_search # 导入我们之前写好的带防御墙的搜索工具
 
 DEFAULT_ALLOWED_SITES = [
-    "shixiseng.com",
-    "zhipin.com",
     "nowcoder.com",
+    "zhipin.com",
+    "shixiseng.com",
     "liepin.com",
 ]
 def _normalize_url(url: str) -> str:

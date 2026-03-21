@@ -12,9 +12,9 @@ from src.config import config
 from src.utils.output_formatter import deduplicate_jobs, format_and_save_jobs
 
 DEFAULT_ALLOWED_SITES = [
-    "shixiseng.com",
-    "zhipin.com",
     "nowcoder.com",
+    "zhipin.com",
+    "shixiseng.com",
     "liepin.com",
 ]
 

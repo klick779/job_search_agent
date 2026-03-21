@@ -51,7 +51,7 @@ _llm_client: Optional[ChatOpenAI] = None
 
 def get_llm_client(
     model: str = "gpt-4o-mini",       # 默认使用的模型版本
-    temperature: float = 0.5,         # 默认的发散度/创造力
+    temperature: float = 0.7,         # 默认的发散度/创造力
     max_tokens: int = 2000,           # 默认的最大输出字数
     request_timeout: float = 30.0     # 默认的等待超时时间（30秒）
 ) -> ChatOpenAI:
